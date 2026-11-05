@@ -3,512 +3,179 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WiFi 二维码生成器 | WiFi QR Code Generator</title>
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- QRCode.js Library -->
+    <title>WiFi 二维码生成器</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <!-- QRCode.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <!-- html2canvas for card export -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <!-- Google Fonts Inter -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
-                    },
-                    colors: {
-                        apple: {
-                            bg: '#f5f5f7',
-                            card: '#ffffff',
-                            text: '#1d1d1f',
-                            subtext: '#86868b',
-                            blue: '#0071e3',
-                            bluehover: '#0077ed',
-                            gray: '#e8e8ed',
-                            lightgray: '#f5f5f7'
-                        }
-                    },
-                    boxShadow: {
-                        'apple-sm': '0 2px 8px rgba(0, 0, 0, 0.04)',
-                        'apple-md': '0 8px 30px rgba(0, 0, 0, 0.08)',
-                        'apple-lg': '0 20px 40px rgba(0, 0, 0, 0.12)',
-                    }
-                }
-            }
-        }
-    </script>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
         body {
+            font-family: 'Inter', sans-serif;
             background-color: #f5f5f7;
             color: #1d1d1f;
-            -webkit-font-smoothing: antialiased;
         }
-        /* Custom UI aesthetics */
-        .glass-panel {
+        .glass-card {
             background: rgba(255, 255, 255, 0.85);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.5);
-        }
-        .apple-input {
-            transition: all 0.2s ease;
-            background-color: #f5f5f7;
-            border: 1px solid transparent;
-        }
-        .apple-input:focus {
-            background-color: #ffffff;
-            border-color: #0071e3;
-            box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.15);
-            outline: none;
-        }
-        /* Print layout adjustments */
-        @media print {
-            body * {
-                visibility: hidden;
-            }
-            #printableCard, #printableCard * {
-                visibility: visible;
-            }
-            #printableCard {
-                position: absolute;
-                left: 50%;
-                top: 50%;
-                transform: translate(-50%, -50%);
-                width: 100%;
-                max-width: 400px;
-                box-shadow: none !important;
-                border: 1px solid #e5e7eb !important;
-            }
-            .no-print {
-                display: none !important;
-            }
+            border: 1px solid rgba(255, 255, 255, 0.6);
         }
     </style>
 </head>
-<body class="min-h-screen flex flex-col justify-between font-sans antialiased selection:bg-apple-blue selection:text-white">
-
-    <!-- Toast Notification -->
-    <div id="toast" class="fixed top-5 right-5 z-50 transform translate-y-[-100px] opacity-0 transition-all duration-300 ease-out flex items-center gap-3 bg-gray-900/90 backdrop-blur-md text-white px-5 py-3.5 rounded-2xl shadow-apple-md">
-        <i id="toastIcon" class="fa-solid fa-circle-check text-green-400 text-lg"></i>
-        <span id="toastMessage" class="text-sm font-medium">提示信息</span>
-    </div>
-
-    <!-- Header / Navigation -->
-    <header class="w-full py-6 px-6 sm:px-12 flex justify-between items-center no-print max-w-7xl mx-auto">
-        <div class="flex items-center space-x-3">
-            <div class="w-10 h-10 rounded-2xl bg-apple-blue flex items-center justify-center text-white shadow-apple-sm">
-                <i class="fa-solid fa-wifi text-lg"></i>
-            </div>
-            <div>
-                <h1 class="text-lg font-semibold tracking-tight text-apple-text">WiFi 二维码生成器</h1>
-                <p class="text-xs text-apple-subtext">扫码即连 · 快捷安全</p>
-            </div>
+<body class="min-h-screen flex flex-col justify-between py-10 px-4 sm:px-6">
+    <div class="max-w-4xl mx-auto w-full space-y-8">
+        <!-- Header -->
+        <div class="text-center space-y-2">
+            <h1 class="text-3xl font-bold tracking-tight text-gray-900">WiFi 二维码生成器</h1>
+            <p class="text-sm text-gray-500">输入网络信息，一键生成专属扫码连接二维码，支持下载与打印。</p>
         </div>
-        <div class="flex items-center gap-2">
-            <span class="text-xs font-medium bg-gray-200/60 text-gray-600 px-3 py-1.5 rounded-full">极简网页版</span>
-        </div>
-    </header>
 
-    <!-- Main Container -->
-    <main class="w-full max-w-6xl mx-auto px-4 sm:px-6 py-4 flex-grow flex items-center justify-center">
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 w-full items-start">
-            
-            <!-- Left Side: Input Controls (Lg 7 Cols) -->
-            <div class="lg:col-span-7 bg-white rounded-3xl p-6 sm:p-8 shadow-apple-md border border-gray-100/80 transition-all">
-                <div class="mb-6">
-                    <h2 class="text-xl font-bold text-apple-text tracking-tight">网络参数设置</h2>
-                    <p class="text-sm text-apple-subtext mt-1">请输入您的 WiFi 信息，二维码将自动生成</p>
-                </div>
-
-                <form id="wifiForm" onsubmit="event.preventDefault();" class="space-y-5">
-                    <!-- SSID Input -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+            <!-- Form Card -->
+            <div class="glass-card p-6 sm:p-8 rounded-3xl shadow-xl shadow-gray-200/50 space-y-6">
+                <div class="space-y-4">
+                    <!-- SSID -->
                     <div>
-                        <label for="ssid" class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-2">
-                            WiFi 名称 (SSID) <span class="text-red-500">*</span>
-                        </label>
-                        <div class="relative">
-                            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
-                                <i class="fa-solid fa-wifi text-sm"></i>
-                            </div>
-                            <input type="text" id="ssid" placeholder="例如：MyHome_5G" required
-                                class="apple-input w-full pl-10 pr-4 py-3 rounded-xl text-sm text-apple-text placeholder-gray-400 font-medium">
-                        </div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-gray-600 mb-2">WiFi 名称 (SSID)</label>
+                        <input type="text" id="ssid" placeholder="例如：MyHome_WiFi" class="w-full px-4 py-3 bg-gray-50/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white focus:outline-none transition-all text-sm">
                     </div>
 
-                    <!-- Password Input -->
-                    <div id="passwordContainer">
-                        <label for="password" class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-2">
-                            WiFi 密码
-                        </label>
-                        <div class="relative">
-                            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
-                                <i class="fa-solid fa-lock text-sm"></i>
-                            </div>
-                            <input type="password" id="password" placeholder="输入无线网络密码"
-                                class="apple-input w-full pl-10 pr-10 py-3 rounded-xl text-sm text-apple-text placeholder-gray-400 font-medium">
-                            <button type="button" id="togglePassword" class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-gray-400 hover:text-gray-600 focus:outline-none">
-                                <i class="fa-regular fa-eye text-sm" id="eyeIcon"></i>
-                            </button>
-                        </div>
+                    <!-- Password -->
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-gray-600 mb-2">WiFi 密码</label>
+                        <input type="text" id="password" placeholder="请输入 WiFi 密码" class="w-full px-4 py-3 bg-gray-50/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white focus:outline-none transition-all text-sm">
                     </div>
 
                     <!-- Encryption Type -->
                     <div>
-                        <label class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-2">
-                            加密类型 (Security)
-                        </label>
-                        <div class="grid grid-cols-3 gap-3">
-                            <label class="cursor-pointer">
-                                <input type="radio" name="encryption" value="WPA" checked class="peer sr-only">
-                                <div class="py-2.5 px-3 rounded-xl border border-gray-200 text-center text-xs font-medium text-gray-600 peer-checked:border-apple-blue peer-checked:bg-apple-blue/5 peer-checked:text-apple-blue transition-all">
-                                    <i class="fa-solid fa-shield-halved mr-1.5"></i>WPA / WPA2 / WPA3
-                                </div>
-                            </label>
-                            <label class="cursor-pointer">
-                                <input type="radio" name="encryption" value="WEP" class="peer sr-only">
-                                <div class="py-2.5 px-3 rounded-xl border border-gray-200 text-center text-xs font-medium text-gray-600 peer-checked:border-apple-blue peer-checked:bg-apple-blue/5 peer-checked:text-apple-blue transition-all">
-                                    <i class="fa-solid fa-key mr-1.5"></i>WEP
-                                </div>
-                            </label>
-                            <label class="cursor-pointer">
-                                <input type="radio" name="encryption" value="nopass" class="peer sr-only">
-                                <div class="py-2.5 px-3 rounded-xl border border-gray-200 text-center text-xs font-medium text-gray-600 peer-checked:border-apple-blue peer-checked:bg-apple-blue/5 peer-checked:text-apple-blue transition-all">
-                                    <i class="fa-solid fa-lock-open mr-1.5"></i>无密码 (Open)
-                                </div>
-                            </label>
-                        </div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-gray-600 mb-2">加密类型 (Authentication)</label>
+                        <select id="encryption" class="w-full px-4 py-3 bg-gray-50/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white focus:outline-none transition-all text-sm">
+                            <option value="WPA" selected>WPA / WPA2 / WPA3 (绝大多数设备)</option>
+                            <option value="WEP">WEP (较旧的网络)</option>
+                            <option value="nopass">无密码 (开放网络)</option>
+                        </select>
                     </div>
 
-                    <!-- Hidden Network Toggle -->
-                    <div class="pt-2">
-                        <label class="flex items-center justify-between cursor-pointer p-3 rounded-xl hover:bg-gray-50 transition-colors border border-transparent">
-                            <div class="flex items-center gap-3">
-                                <div class="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-gray-600">
-                                    <i class="fa-solid fa-eye-slash text-xs"></i>
-                                </div>
-                                <div>
-                                    <span class="text-sm font-medium text-apple-text block">隐藏的网络</span>
-                                    <span class="text-xs text-apple-subtext">如果您的 WiFi 隐藏了 SSID 广播请开启</span>
-                                </div>
-                            </div>
-                            <div class="relative">
-                                <input type="checkbox" id="isHidden" class="sr-only peer">
-                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-apple-blue"></div>
-                            </div>
+                    <!-- Hidden SSID -->
+                    <div class="flex items-center justify-between pt-2">
+                        <span class="text-xs font-semibold uppercase tracking-wider text-gray-600">隐藏网络 (Hidden SSID)</span>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="hidden" class="sr-only peer">
+                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                         </label>
                     </div>
+                </div>
 
-                    <!-- Color Customization (Accordion) -->
-                    <div class="border-t border-gray-100 pt-4">
-                        <button type="button" id="toggleCustomColors" class="flex items-center justify-between w-full text-left text-xs font-semibold text-gray-500 hover:text-apple-blue transition-colors">
-                            <span><i class="fa-solid fa-palette mr-1.5"></i>个性化颜色设置 (可选)</span>
-                            <i class="fa-solid fa-chevron-down text-xs transition-transform duration-200" id="colorChevron"></i>
-                        </button>
-                        
-                        <div id="colorSettings" class="hidden grid-cols-2 gap-4 mt-4 bg-gray-50 p-4 rounded-xl">
-                            <div>
-                                <label class="block text-xs font-medium text-gray-600 mb-1.5">二维码颜色</label>
-                                <div class="flex items-center gap-2">
-                                    <input type="color" id="qrFgColor" value="#000000" class="w-8 h-8 rounded-lg cursor-pointer border-0">
-                                    <span class="text-xs font-mono text-gray-500" id="qrFgVal">#000000</span>
-                                </div>
-                            </div>
-                            <div>
-                                <label class="block text-xs font-medium text-gray-600 mb-1.5">背景颜色</label>
-                                <div class="flex items-center gap-2">
-                                    <input type="color" id="qrBgColor" value="#ffffff" class="w-8 h-8 rounded-lg cursor-pointer border-0">
-                                    <span class="text-xs font-mono text-gray-500" id="qrBgVal">#ffffff</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </form>
+                <button onclick="generateQRCode()" class="w-full py-3.5 bg-blue-600 hover:bg-blue-700 active:scale-[0.99] text-white font-medium rounded-xl shadow-lg shadow-blue-500/25 transition-all text-sm">
+                    生成二维码
+                </button>
             </div>
 
-            <!-- Right Side: Real-time Card & QR Display (Lg 5 Cols) -->
-            <div class="lg:col-span-5 flex flex-col items-center">
+            <!-- Preview Card -->
+            <div class="glass-card p-6 sm:p-8 rounded-3xl shadow-xl shadow-gray-200/50 flex flex-col items-center justify-center text-center space-y-6 min-h-[380px]">
+                <div id="qrcode-container" class="p-4 bg-white rounded-2xl shadow-inner border border-gray-100 flex items-center justify-center">
+                    <div id="qrcode"></div>
+                </div>
+                <div id="placeholder-text" class="text-gray-400 text-sm">
+                    请在左侧填写信息并点击生成
+                </div>
                 
-                <!-- Printable/Display Card Container -->
-                <div id="printableCard" class="w-full bg-white rounded-3xl p-8 shadow-apple-lg border border-gray-100/90 text-center flex flex-col items-center transition-all">
-                    
-                    <!-- Card Top Header -->
-                    <div class="mb-4">
-                        <div class="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-apple-blue/10 text-apple-blue mb-3">
-                            <i class="fa-solid fa-wifi text-xl"></i>
-                        </div>
-                        <h3 class="text-xl font-bold text-apple-text tracking-tight">连接无线网络</h3>
-                        <p class="text-xs text-apple-subtext mt-0.5">手机打开相机扫描二维码即可自动连接</p>
-                    </div>
-
-                    <!-- QR Code Wrapper -->
-                    <div class="relative p-4 bg-white rounded-2xl border border-gray-100 shadow-apple-sm my-2 flex items-center justify-center min-h-[220px] min-w-[220px]">
-                        <div id="qrcode" class="flex justify-center items-center"></div>
-                        <!-- Placeholder when SSID is empty -->
-                        <div id="qrPlaceholder" class="absolute inset-0 flex flex-col items-center justify-center bg-gray-50/90 rounded-2xl p-4 text-center">
-                            <i class="fa-solid fa-qrcode text-3xl text-gray-300 mb-2"></i>
-                            <p class="text-xs text-gray-400 font-medium">请输入 WiFi 名称<br>生成二维码</p>
-                        </div>
-                    </div>
-
-                    <!-- Card Network Detail Box -->
-                    <div class="w-full bg-apple-bg rounded-2xl p-4 mt-4 space-y-2 text-left border border-gray-100">
-                        <div class="flex items-center justify-between">
-                            <span class="text-xs font-medium text-apple-subtext">网络名称 (SSID)</span>
-                            <span id="cardSSID" class="text-xs font-bold text-apple-text truncate max-w-[180px]">未设置</span>
-                        </div>
-                        <div id="cardPasswordRow" class="flex items-center justify-between border-t border-gray-200/60 pt-2">
-                            <span class="text-xs font-medium text-apple-subtext">密码</span>
-                            <span id="cardPassword" class="text-xs font-mono font-bold text-apple-text truncate max-w-[180px]">••••••••</span>
-                        </div>
-                        <div class="flex items-center justify-between border-t border-gray-200/60 pt-2">
-                            <span class="text-xs font-medium text-apple-subtext">加密方式</span>
-                            <span id="cardSecurity" class="text-xs font-medium text-gray-600">WPA/WPA2</span>
-                        </div>
-                    </div>
-
-                    <!-- Card Footer Label -->
-                    <div class="mt-4 pt-2 text-[10px] text-gray-400 flex items-center gap-1">
-                        <i class="fa-brands fa-apple text-xs"></i>
-                        <span>WiFi QuickConnect Card</span>
-                    </div>
-                </div>
-
-                <!-- Action Buttons Container (Hidden during print) -->
-                <div class="w-full grid grid-cols-2 gap-3 mt-6 no-print">
-                    <button id="downloadBtn" class="flex items-center justify-center gap-2 py-3 px-4 bg-apple-blue hover:bg-apple-bluehover text-white text-sm font-semibold rounded-2xl shadow-apple-sm transition-all active:scale-[0.98]">
-                        <i class="fa-solid fa-download"></i>
-                        <span>保存图片</span>
+                <div id="action-buttons" class="hidden w-full space-y-3">
+                    <button onclick="downloadQRCode()" class="w-full py-3 bg-gray-900 hover:bg-black text-white font-medium rounded-xl transition-all text-sm shadow-md">
+                        保存二维码图片
                     </button>
-
-                    <button id="printBtn" class="flex items-center justify-center gap-2 py-3 px-4 bg-white hover:bg-gray-50 text-apple-text border border-gray-200 text-sm font-semibold rounded-2xl shadow-apple-sm transition-all active:scale-[0.98]">
-                        <i class="fa-solid fa-print text-gray-600"></i>
-                        <span>打印提示牌</span>
+                    <button onclick="printCard()" class="w-full py-3 bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 font-medium rounded-xl transition-all text-sm">
+                        打印 WiFi 提示牌
                     </button>
                 </div>
-
             </div>
-
         </div>
-    </main>
+    </div>
 
     <!-- Footer -->
-    <footer class="w-full py-6 text-center text-xs text-apple-subtext no-print border-t border-gray-200/40 mt-12">
-        <p>所有二维码数据均在本地浏览器直接生成，绝不上传任何服务器，保护您的隐私安全。</p>
+    <footer class="text-center text-xs text-gray-400 mt-10">
+        WiFi QR Code Generator &bull; Designed with Minimalist Style
     </footer>
 
-    <!-- Logic Script -->
+    <!-- Print Template Area -->
+    <div id="print-area" class="hidden print:block fixed inset-0 bg-white z-50 p-12 text-center">
+        <div class="max-w-md mx-auto border-2 border-dashed border-gray-300 rounded-3xl p-8 space-y-6">
+            <h2 class="text-2xl font-bold text-gray-900">扫码连接 WiFi</h2>
+            <div id="print-qrcode" class="flex justify-center my-4"></div>
+            <p class="text-xs text-gray-400">请使用手机相机直接扫描二维码连接网络</p>
+        </div>
+    </div>
+
     <script>
         let qrcodeObj = null;
 
-        // Elements
-        const ssidInput = document.getElementById('ssid');
-        const passwordInput = document.getElementById('password');
-        const passwordContainer = document.getElementById('passwordContainer');
-        const togglePasswordBtn = document.getElementById('togglePassword');
-        const eyeIcon = document.getElementById('eyeIcon');
-        const encryptionRadios = document.getElementsByName('encryption');
-        const isHiddenCheckbox = document.getElementById('isHidden');
-        
-        const qrContainer = document.getElementById('qrcode');
-        const qrPlaceholder = document.getElementById('qrPlaceholder');
-        const cardSSID = document.getElementById('cardSSID');
-        const cardPassword = document.getElementById('cardPassword');
-        const cardPasswordRow = document.getElementById('cardPasswordRow');
-        const cardSecurity = document.getElementById('cardSecurity');
-        
-        const downloadBtn = document.getElementById('downloadBtn');
-        const printBtn = document.getElementById('printBtn');
-        
-        const qrFgColor = document.getElementById('qrFgColor');
-        const qrBgColor = document.getElementById('qrBgColor');
-        const qrFgVal = document.getElementById('qrFgVal');
-        const qrBgVal = document.getElementById('qrBgVal');
-        const toggleCustomColors = document.getElementById('toggleCustomColors');
-        const colorSettings = document.getElementById('colorSettings');
-        const colorChevron = document.getElementById('colorChevron');
-
-        // Toast Helper
-        function showToast(message, isSuccess = true) {
-            const toast = document.getElementById('toast');
-            const toastMessage = document.getElementById('toastMessage');
-            const toastIcon = document.getElementById('toastIcon');
-
-            toastMessage.textContent = message;
-            if (isSuccess) {
-                toastIcon.className = "fa-solid fa-circle-check text-green-400 text-lg";
-            } else {
-                toastIcon.className = "fa-solid fa-circle-exclamation text-amber-400 text-lg";
-            }
-
-            toast.classList.remove('translate-y-[-100px]', 'opacity-0');
-            toast.classList.add('translate-y-0', 'opacity-100');
-
-            setTimeout(() => {
-                toast.classList.remove('translate-y-0', 'opacity-100');
-                toast.classList.add('translate-y-[-100px]', 'opacity-0');
-            }, 3000);
-        }
-
-        // Escape WiFi string special characters according to MECARD/WiFi spec
-        function escapeWiFiString(str) {
-            if (!str) return '';
-            // Escape special characters: backslash, semicolon, comma, colon, and quotes
-            return str.replace(/\\/g, '\\\\')
-                      .replace(/;/g, '\\;')
-                      .replace(/,/g, '\\,')
-                      .replace(/:/g, '\\:')
-                      .replace(/"/g, '\\"');
-        }
-
-        // Get selected encryption
-        function getSelectedEncryption() {
-            for (const radio of encryptionRadios) {
-                if (radio.checked) return radio.value;
-            }
-            return 'WPA';
-        }
-
-        // Main QR Generator Logic
         function generateQRCode() {
-            const ssid = ssidInput.value.trim();
-            const password = passwordInput.value;
-            const encryption = getSelectedEncryption();
-            const isHidden = isHiddenCheckbox.checked;
+            const ssid = document.getElementById('ssid').value.trim();
+            const password = document.getElementById('password').value;
+            const encryption = document.getElementById('encryption').value;
+            const hidden = document.getElementById('hidden').checked ? 'true' : 'false';
 
-            // UI updates for Card info
-            cardSSID.textContent = ssid || '未设置';
-            cardSecurity.textContent = encryption === 'nopass' ? '无密码' : encryption;
-
-            if (encryption === 'nopass') {
-                passwordContainer.style.display = 'none';
-                cardPasswordRow.style.display = 'none';
-            } else {
-                passwordContainer.style.display = 'block';
-                cardPasswordRow.style.display = 'flex';
-                cardPassword.textContent = password ? password : '未设置';
-            }
-
-            // If SSID is empty, hide QR and show placeholder
             if (!ssid) {
-                qrContainer.innerHTML = '';
-                qrPlaceholder.style.display = 'flex';
+                alert('请输入 WiFi 名称 (SSID)');
                 return;
             }
 
-            qrPlaceholder.style.display = 'none';
-            qrContainer.innerHTML = '';
+            let wifiString = `WIFI:S:${escapeSpecialChars(ssid)};T:${encryption};P:${escapeSpecialChars(password)};H:${hidden};;`;
 
-            // Standard WiFi QR format: WIFI:S:<SSID>;T:<TYPE>;P:<PASSWORD>;H:<HIDDEN>;;
-            let wifiString = `WIFI:S:${escapeWiFiString(ssid)};`;
-            
-            if (encryption !== 'nopass') {
-                wifiString += `T:${encryption};P:${escapeWiFiString(password)};`;
-            } else {
-                wifiString += `T:nopass;`;
-            }
-            
-            if (isHidden) {
-                wifiString += `H:true;`;
-            }
-            wifiString += `;`;
+            const qrcodeContainer = document.getElementById('qrcode');
+            qrcodeContainer.innerHTML = '';
 
-            // Generate using qrcode.js
-            try {
-                qrcodeObj = new QRCode(qrContainer, {
-                    text: wifiString,
-                    width: 200,
-                    height: 200,
-                    colorDark: qrFgColor.value,
-                    colorLight: qrBgColor.value,
-                    correctLevel: QRCode.CorrectLevel.M
-                });
-            } catch (err) {
-                console.error("QRCode generation error:", err);
-            }
-        }
-
-        // Password visibility toggle
-        togglePasswordBtn.addEventListener('click', () => {
-            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
-            passwordInput.setAttribute('type', type);
-            eyeIcon.className = type === 'password' ? 'fa-regular fa-eye text-sm' : 'fa-regular fa-eye-slash text-sm';
-        });
-
-        // Toggle custom color accordion
-        toggleCustomColors.addEventListener('click', () => {
-            colorSettings.classList.toggle('hidden');
-            colorSettings.classList.toggle('grid');
-            colorChevron.classList.toggle('rotate-180');
-        });
-
-        // Color Inputs Sync
-        qrFgColor.addEventListener('input', (e) => {
-            qrFgVal.textContent = e.target.value;
-            generateQRCode();
-        });
-        qrBgColor.addEventListener('input', (e) => {
-            qrBgVal.textContent = e.target.value;
-            generateQRCode();
-        });
-
-        // Event Listeners for Live Update
-        ssidInput.addEventListener('input', generateQRCode);
-        passwordInput.addEventListener('input', generateQRCode);
-        isHiddenCheckbox.addEventListener('change', generateQRCode);
-        
-        for (const radio of encryptionRadios) {
-            radio.addEventListener('change', generateQRCode);
-        }
-
-        // Download Card / QR Code
-        downloadBtn.addEventListener('click', () => {
-            const ssid = ssidInput.value.trim();
-            if (!ssid) {
-                showToast('请先填写 WiFi 名称', false);
-                return;
-            }
-
-            const cardElement = document.getElementById('printableCard');
-            
-            showToast('正在生成高清图片...');
-
-            html2canvas(cardElement, {
-                scale: 3, // High quality render
-                backgroundColor: null,
-                useCORS: true
-            }).then(canvas => {
-                const image = canvas.toDataURL("image/png");
-                const a = document.createElement('a');
-                a.href = image;
-                a.download = `WiFi-${ssid}-QRCode.png`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                showToast('图片已保存到本地！');
-            }).catch(err => {
-                console.error(err);
-                showToast('生成图片失败，请重试', false);
+            qrcodeObj = new QRCode(qrcodeContainer, {
+                text: wifiString,
+                width: 200,
+                height: 200,
+                colorDark: "#000000",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.M
             });
-        });
 
-        // Print Feature
-        printBtn.addEventListener('click', () => {
-            const ssid = ssidInput.value.trim();
-            if (!ssid) {
-                showToast('请先填写 WiFi 名称', false);
-                return;
+            document.getElementById('placeholder-text').style.display = 'none';
+            document.getElementById('action-buttons').classList.remove('hidden');
+
+            const printQrcodeContainer = document.getElementById('print-qrcode');
+            printQrcodeContainer.innerHTML = '';
+            new QRCode(printQrcodeContainer, {
+                text: wifiString,
+                width: 220,
+                height: 220,
+                colorDark: "#000000",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.M
+            });
+        }
+
+        function escapeSpecialChars(str) {
+            return str.replace(/([\\;,:\"])/g, '\\$1');
+        }
+
+        function downloadQRCode() {
+            const img = document.querySelector('#qrcode img') || document.querySelector('#qrcode canvas');
+            if (!img) return;
+
+            let imageUrl = '';
+            if (img.tagName === 'CANVAS') {
+                imageUrl = img.toDataURL('image/png');
+            } else {
+                imageUrl = img.src;
             }
-            window.print();
-        });
 
-        // Initial trigger
-        generateQRCode();
+            const link = document.createElement('a');
+            link.href = imageUrl;
+            link.download = 'wifi-qrcode.png';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function printCard() {
+            window.print();
+        }
     </script>
 </body>
 </html>
